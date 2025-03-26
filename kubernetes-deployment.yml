@@ -1,0 +1,140 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cleanai-backend-nestjs
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cleanai-backend-nestjs
+  template:
+    metadata:
+      labels:
+        app: cleanai-backend-nestjs
+    spec:
+      containers:
+      - name: cleanai-backend-nestjs
+        image: cleanai-backend-nestjs:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: SUPABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: cleanai-secrets
+              key: supabase-url
+        - name: SUPABASE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cleanai-secrets
+              key: supabase-key
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cleanai-secrets
+              key: openai-api-key
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cleanai-backend-fastapi
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cleanai-backend-fastapi
+  template:
+    metadata:
+      labels:
+        app: cleanai-backend-fastapi
+    spec:
+      containers:
+      - name: cleanai-backend-fastapi
+        image: cleanai-backend-fastapi:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: SUPABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: cleanai-secrets
+              key: supabase-url
+        - name: SUPABASE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cleanai-secrets
+              key: supabase-key
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cleanai-secrets
+              key: openai-api-key
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cleanai-frontend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: cleanai-frontend
+  template:
+    metadata:
+      labels:
+        app: cleanai-frontend
+    spec:
+      containers:
+      - name: cleanai-frontend
+        image: cleanai-frontend:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: NEXT_PUBLIC_SUPABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: cleanai-secrets
+              key: supabase-url
+        - name: NEXT_PUBLIC_SUPABASE_ANON_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cleanai-secrets
+              key: supabase-key
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cleanai-backend-nestjs-service
+spec:
+  selector:
+    app: cleanai-backend-nestjs
+  ports:
+  - port: 3000
+    targetPort: 3000
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cleanai-backend-fastapi-service
+spec:
+  selector:
+    app: cleanai-backend-fastapi
+  ports:
+  - port: 8000
+    targetPort: 8000
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cleanai-frontend-service
+spec:
+  selector:
+    app: cleanai-frontend
+  ports:
+  - port: 80
+    targetPort: 3000
+  type: LoadBalancer
